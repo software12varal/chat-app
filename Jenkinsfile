@@ -1,6 +1,11 @@
 pipeline {
     
-    agent any
+    agent {
+        docker {
+            image 'node:6-alpine'
+            args '-p 3000:3000 -p 5000:5000' 
+        }
+    }
 
     stages {
 
@@ -8,15 +13,18 @@ pipeline {
             
             //outlines the steps to be used e.g pip install; simply steps on a command line.
             steps {
-                echo 'building the application'
+                sh """
+                    docker build -t chat app .
+                """
             }
         }
         
         stage("test") {
 
             steps {
-                echo 'testing the application'
-               //Example of a command to run
+                sh """
+                    docker run --rm chat app
+                """
             }
         }
        
