@@ -1,39 +1,46 @@
-pipeline {
-    
-    agent {
-        docker {
-            image 'python:3.8-slim-buster'
-            args '-p 3000:3000 -p 5000:5000' 
-        }
-    }
+pipeline{
 
-    stages {
+    agent {label 'Jenkins-slave'}
 
-        stage("build") {
-            
-            //outlines the steps to be used e.g pip install; simply steps on a command line.
-            steps {
-                sh """
-                    docker build -t chat app .
-                """
-            }
-        }
-        
-        stage("test") {
+	environment {
+		DOCKERHUB_CREDENTIALS=credentials('jenkins-dockerhub')
+	}
 
-            steps {
-                sh """
-                    docker run --rm chat app
-                """
-            }
-        }
-       
-        stage("deploy") {
+	stages {
+	    
+	    stage('gitclone') {
 
-            steps {
-                echo 'deploying the application'
-            }
-        }
-        
-    }
+			steps {
+				git 'https://github.com/software12varal/chat-app.git'
+			}
+		}
+
+		stage('Build') {
+
+			steps {
+				sh 'sudo docker build -t keerthanakumar12/chatapp:latest .'
+			}
+		}
+
+		stage('Login') {
+
+			steps {
+				sh 'echo $DOCKERHUB_CREDENTIALS_PSW | sudo docker login -u $DOCKERHUB_CREDENTIALS_USR --password-stdin'
+			}
+		}
+
+		stage('Push') {
+
+			steps {
+				sh 'sudo docker push keerthanakumar12/chatapp:latest'
+			}
+		}
+	}
+
+	post {
+		always {
+			sh 'sudo docker logout'
+		}
+	}
+
 }
